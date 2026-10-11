@@ -1,2 +1,3 @@
-# portfolio
-Repository for all personal projects and portfolio work
+# Portfolio Repository
+
+Github location for all my personal projects and portfolio work
