@@ -1,0 +1,51 @@
+@startuml
+title Odysseus - Weekly Plan Generation
+
+left to right direction
+hide empty description
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 18
+skinparam ArrowColor #64748B
+skinparam ArrowThickness 2
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam defaultFontColor #0F172A
+skinparam TitleFontColor #0F172A
+
+skinparam state {
+    BackgroundColor #F8FAFC
+    BorderColor #CBD5E1
+    FontColor #0F172A
+}
+
+state "<b>PLANNING CONTEXT</b>\n\nGoals and target events\nEffective availability\nExplicit rest\nCompleted training\nRecovery and progression\nLearned preferences\nEvidence context" as Context #F1F5F9
+
+state "<b>LOCAL LLM PLANNER</b>\n\nApplies coaching judgement\nBuilds the week as a whole\nCoordinates modalities\nCreates prescriptions\nProvides planning rationale" as Planner #E8F4F4
+
+state "<b>CANDIDATE WEEKLY PLAN</b>\n\nMonday to Sunday\nRunning\nStrength\nHybrid / HYROX\nRest\nStructured prescriptions" as Candidate #E0F2FE
+
+state "<b>ODYSSEUS VALIDATES</b>\n\nStructure and required fields\nAvailability and explicit rest\nSupported prescriptions\nHard planning constraints\nComplete planning week" as Validate #EEF2FF
+
+state Valid <<choice>> #0F766E
+
+state "<b>RETURN VALIDATION FEEDBACK</b>\n\nExplain failed constraints or\nstructural problems to the planner" as Feedback #FFF7ED
+
+state "<b>ACTIVE WEEKLY PLAN</b>\n\nPersist structured plan\nWeekly aim and rationale\nReady for athlete inspection" as Active #DCFCE7
+
+state "<b>GENERATION FAILED</b>\n\nNo invalid or partial plan\nbecomes active\nFailure is visible" as Failed #FEE2E2
+
+Context --> Planner : structured context
+Planner --> Candidate : coaching judgement
+Candidate --> Validate : candidate plan
+Validate --> Valid
+
+Valid --> Active : Valid
+
+Valid --> Feedback : Invalid\nAttempts remain
+Feedback --> Planner : retry with feedback
+
+Valid --> Failed : Invalid\n3 attempts exhausted
+
+@enduml

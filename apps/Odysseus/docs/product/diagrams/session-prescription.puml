@@ -1,0 +1,50 @@
+@startuml
+title Odysseus - Build Session Prescription
+
+left to right direction
+hide empty description
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 18
+skinparam ArrowColor #64748B
+skinparam ArrowThickness 2
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+
+skinparam state {
+    BackgroundColor #F8FAFC
+    BorderColor #CBD5E1
+    FontColor #0F172A
+}
+
+state "<b>SESSION ROLE IN THE WEEK</b>\n\nTraining purpose\nGoal contribution\nRecovery context\nPlacement within the week" as Intent #F1F5F9
+
+state "<b>ODYSSEUS DEFINES</b>\n<b>SESSION APPROACH</b>\n\nChoose appropriate modality\nDetermine required stimulus\nSet suitable session structure" as Define #E8F4F4
+
+state Modality <<choice>> #0F766E
+
+state "<b>RUNNING</b>\n\nWarm-up / cool-down\nSteady work or intervals\nRecovery steps\nDistance or duration\nHR / pace / power targets" as Run #E0F2FE
+
+state "<b>STRENGTH</b>\n\nOrdered exercises\nSets and repetitions\nLoad where appropriate\nRPE / RIR\nRest and supersets" as Strength #EEF2FF
+
+state "<b>HYBRID / HYROX</b>\n\nOrdered mixed work\nRunning + functional movements\nDistance / duration / reps\nRounds and load\nRecovery and guidance" as Hybrid #FFF7ED
+
+state "<b>FINALISE SESSION</b>\n\nAdd clear session purpose\nSet AM / PM / unspecified period\nPreserve complete prescription\nAdd rationale where useful" as Finalise #F1F5F9
+
+state "<b>PLANNED SESSION</b>\n\nComplete athlete-facing prescription\nReady for the weekly plan" as Planned #DCFCE7
+
+Intent --> Define
+Define --> Modality
+
+Modality --> Run : Running
+Modality --> Strength : Strength
+Modality --> Hybrid : Hybrid / HYROX
+
+Run --> Finalise
+Strength --> Finalise
+Hybrid --> Finalise
+
+Finalise --> Planned
+
+@enduml

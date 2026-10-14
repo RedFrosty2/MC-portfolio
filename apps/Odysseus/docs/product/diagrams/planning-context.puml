@@ -1,0 +1,39 @@
+@startuml
+title Odysseus - Build Planning Context
+
+left to right direction
+hide empty description
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 18
+skinparam ArrowColor #64748B
+skinparam ArrowThickness 2
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam defaultFontColor #0F172A
+skinparam TitleFontColor #0F172A
+
+skinparam state {
+    BackgroundColor #F8FAFC
+    BorderColor #CBD5E1
+    FontColor #0F172A
+}
+
+state "<b>ATHLETE CONTEXT</b>\n\nGoals and target events\nRecurring availability\nDated exceptions\nExplicit rest\nStated preferences" as Athlete #F1F5F9
+
+state "<b>TRAINING CONTEXT</b>\n\nCompleted training\nRecovery context\nCurrent progression\nRelevant training history\nLearned preferences\n\n<i>v0.1 may use representative data</i>" as Training #E0F2FE
+
+state "<b>EVIDENCE CONTEXT</b>\n\nCurated and sourced\ntraining principles\n\nRunning\nStrength\nConcurrent training\nHYROX / hybrid\nRecovery and progression" as Evidence #EEF2FF
+
+state "<b>ODYSSEUS RESOLVES</b>\n<b>AUTHORITATIVE CONTEXT</b>\n\nResolve effective availability\nPreserve explicit rest\nCombine current athlete state\nSelect relevant evidence\nKeep preferences as soft context" as Resolve #E8F4F4
+
+state "<b>STRUCTURED PLANNING CONTEXT</b>\n\nGoals and events\nHard constraints\nCompleted training\nRecovery and progression\nLearned preferences\nEvidence context\n\nReady for local LLM planning" as Context #DCFCE7
+
+Athlete --> Resolve : athlete facts
+Training --> Resolve : current state
+Evidence --> Resolve : training evidence
+
+Resolve --> Context
+
+@enduml

@@ -1,0 +1,136 @@
+@startuml
+title Odysseus - Ports and Adapters Architecture
+
+left to right direction
+hide empty description
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 18
+
+skinparam ArrowColor #64748B
+skinparam ArrowThickness 2
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam defaultFontColor #0F172A
+skinparam TitleFontColor #0F172A
+
+skinparam rectangle {
+    BorderColor #CBD5E1
+    FontColor #0F172A
+}
+
+skinparam package {
+    BorderColor #94A3B8
+    FontColor #334155
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #D6B656
+    FontColor #334155
+}
+
+
+rectangle "<b>ATHLETE</b>\n\nUses the Odysseus web application\nProvides goals, availability and preferences\nReviews generated weekly plans" as Athlete #F8FAFC
+
+
+package "DRIVING SIDE" #F8FAFC {
+
+    rectangle "<b>WEB ADAPTER</b>\n<i>Driving adapter</i>\n\nHandles web requests and athlete interaction\nCollects input from forms and pages\nInvokes application use cases\nTransforms application output for presentation\n\nWeb concerns remain outside the core" as Web #E0F2FE
+}
+
+
+package "ODYSSEUS CORE" #FFFFFF {
+
+    package "APPLICATION LAYER" #F0FDFA {
+
+        rectangle "<b>INBOUND PORT</b>\n<i>Use-case interface</i>\n\nDefines capabilities exposed by Odysseus\nto driving adapters\n\nRepresents the entry boundary into\nthe application layer\n\nMay simply be the public interface\nof a UseCase" as Inbound #CCFBF1
+
+
+        rectangle "<b>USE CASE</b>\n<i>Application orchestration</i>\n\nCoordinates one product behaviour\nLoads the context required for that behaviour\nInvokes domain rules and models\nUses outbound ports when external capability\nor persistence is required\n\nContains no web or infrastructure logic" as UseCase #D1FAE5
+
+
+        rectangle "<b>OUTBOUND PORTS</b>\n<i>Application contracts</i>\n\nDefine capabilities the application needs\nfrom outside the Odysseus core\n\nOwned by the application, not adapters\n\nExamples:\nPlanStore\nPlanningCapability" as Outbound #CCFBF1
+    }
+
+
+    package "DOMAIN LAYER" #FAF5FF {
+
+        rectangle "<b>DOMAIN MODEL</b>\n<i>Training concepts and rules</i>\n\nGoals and target events\nAvailability and explicit rest\nWeekly plans\nRunning, strength and hybrid prescriptions\nPlanning rules and hard constraints\n\nExpresses Odysseus behaviour without\nweb, database or integration concerns" as Domain #EDE9FE
+    }
+}
+
+
+package "DRIVEN SIDE" #FFF7ED {
+
+    rectangle "<b>PERSISTENCE ADAPTER</b>\n<i>Driven adapter</i>\n\nImplements persistence-related outbound ports\nStores and retrieves application state\nTranslates between Odysseus models\nand storage-specific representations\n\nStorage technology remains outside the core" as Persistence #FFEDD5
+
+
+    rectangle "<b>PLANNING ADAPTER</b>\n<i>Driven adapter</i>\n\nImplements the planning capability\nSupplies structured athlete and evidence context\nto the local planning model\nTranslates structured model output into\nOdysseus-owned representations\n\nThe model does not define the domain model" as Planner #FFEDD5
+}
+
+
+package "EXTERNAL RESOURCES" #F8FAFC {
+
+    rectangle "<b>DATA STORE</b>\n<i>External resource</i>\n\nDurable storage for application data\nAccessed only through the relevant adapter" as Store #F1F5F9
+
+
+    rectangle "<b>LOCAL PLANNING MODEL</b>\n<i>External resource</i>\n\nLocal or self-hosted LLM used to\napply coaching judgement and produce\na candidate weekly plan\n\nThe specific model and runtime\nremain replaceable" as Runtime #F1F5F9
+}
+
+
+Athlete --> Web : interacts with
+
+Web --> Inbound : drives application
+
+Inbound --> UseCase : invokes
+
+UseCase --> Domain : uses domain model\nand rules
+
+UseCase --> Outbound : depends on\nabstractions
+
+Persistence ..> Outbound : implements
+Planner ..> Outbound : implements
+
+Persistence --> Store : reads / writes
+Planner --> Runtime : invokes
+
+
+note as DrivingNote
+<b>Driving adapters start interaction.</b>
+
+They translate an external interaction
+into a call understood by the application.
+
+Dependencies point inward toward
+the Odysseus core.
+end note
+
+
+note as UseCaseNote
+<b>Use cases live in the application layer.</b>
+
+They coordinate product workflows,
+but do not contain web, database,
+or external integration concerns.
+end note
+
+
+note as PortNote
+<b>The core owns its ports.</b>
+
+Driven adapters implement the capabilities
+required by Odysseus.
+
+The core never depends on concrete
+adapter implementations.
+end note
+
+
+Web -[hidden]down-> DrivingNote
+UseCase -[hidden]down-> UseCaseNote
+Outbound -[hidden]down-> PortNote
+
+@enduml
