@@ -10,7 +10,8 @@ Odysseus lives under:
 `apps/Odysseus/`
 
 Application-specific code, tests, documentation, dependencies, version history,
-and CI configuration should remain within this directory wherever practical.
+and tooling configuration should remain within this directory wherever
+practical.
 
 Repository-level GitHub integration remains at the monorepo root.
 
@@ -181,10 +182,11 @@ For example:
 
 `Closes #12`
 
-The standard Odysseus Pull Request template should be used.
+The standard repository Pull Request template should be used.
 
 The PR should make clear:
 
+- which application is affected;
 - what changed;
 - why the change was required;
 - which requirements are affected;
@@ -272,7 +274,94 @@ every development commit to be permanent documentation.
 
 ---
 
-## 8. Continuous integration
+## 8. Dependency and environment management
+
+Odysseus uses `uv` for Python version management, virtual environments,
+dependency management, dependency locking, and project command execution.
+
+The currently required uv version is:
+
+`0.11.21`
+
+The required version is declared in `pyproject.toml` so local development and CI
+use the same uv release.
+
+The Odysseus Python project is defined by:
+
+- `pyproject.toml` — project metadata, direct dependencies, development
+  dependencies, tool configuration, and the required uv version;
+- `uv.lock` — the exact resolved dependency graph used for reproducible
+  environments;
+- `.python-version` — the Python version expected by the project.
+
+`pyproject.toml`, `uv.lock`, and `.python-version` are committed to version
+control.
+
+The generated `.venv/` directory is local environment state and must not be
+committed.
+
+Odysseus uses a project-local uv environment rather than a shared Conda
+environment.
+
+Dependencies should normally be managed using uv commands rather than by
+directly installing packages with pip or Conda.
+
+Runtime dependencies are added with:
+
+```bash
+uv add <package>
+```
+
+Development-only dependencies are added with:
+
+```bash
+uv add --dev <package>
+```
+
+Dependencies are removed using the corresponding `uv remove` command.
+
+The local project environment is created or synchronized with:
+
+```bash
+uv sync
+```
+
+Project commands should normally be run through uv:
+
+```bash
+uv run <command>
+```
+
+For example:
+
+```bash
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy src
+uv run pytest
+```
+
+GitHub Actions uses the same project definition, Python version, uv version, and
+lockfile as local development.
+
+CI synchronizes dependencies using:
+
+```bash
+uv sync --locked
+```
+
+The `--locked` option ensures CI fails if `pyproject.toml` and `uv.lock` are
+inconsistent rather than modifying the committed dependency resolution.
+
+Each application in the monorepo should manage its Python environment and
+dependency resolution independently unless a demonstrated need for a shared
+workspace emerges.
+
+Odysseus is therefore not currently part of a monorepo-wide uv workspace.
+
+---
+
+## 9. Continuous integration
 
 GitHub Actions workflows live at the monorepo level under:
 
@@ -307,31 +396,77 @@ changes.
 The required branch-protection check should remain stable regardless of whether
 Odysseus-specific checks were needed for a particular Pull Request.
 
-Typical local commands may include:
+CI installs the uv version required by `pyproject.toml`, installs the pinned
+Python version, and synchronizes the committed dependency environment before
+running quality checks.
+
+CI verifies submitted code.
+
+It should not automatically modify source files.
+
+Typical local commands are run through the Odysseus uv environment:
 
 ```bash
-ruff check --fix .
-ruff format .
-pytest
-mypy src
+uv run ruff check --fix .
+uv run ruff format .
+uv run mypy src
+uv run pytest
 ```
 
 Equivalent CI checks should use non-mutating commands:
 
 ```bash
-ruff check .
-ruff format --check .
-pytest
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy src
+uv run pytest
 ```
 
-A Pull Request must pass the required CI checks before it can be merged.
+The repository-level GitHub Actions workflow exposes a stable required status
+check:
+
+`Odysseus CI / Required gate`
+
+This check must pass before an Odysseus Pull Request can be merged.
 
 Additional quality gates should only be introduced when they protect against a
 real project risk.
 
 ---
 
-## 9. Testing
+## 10. Repository protection and merge policy
+
+The `main` branch is protected using GitHub repository rules.
+
+Normal development changes must reach `main` through a Pull Request rather than
+through direct development pushes.
+
+The repository is configured so that:
+
+- Pull Requests are required before changes reach `main`;
+- required CI status checks must pass before merge;
+- the `Odysseus CI / Required gate` check is used as the stable Odysseus CI gate;
+- linear history is required;
+- force pushes to `main` are blocked;
+- squash merging is the standard merge method;
+- merge commits and rebase merging are disabled;
+- merged head branches are automatically deleted.
+
+Required status checks do not currently require a branch to be fully up to date
+with `main` before merging.
+
+This avoids unnecessary rebuilds while still requiring the submitted change to
+pass the configured quality checks.
+
+Reviewer approval is not currently mandatory because Odysseus is being developed
+as a personal project.
+
+The protection policy should become stricter only when repository ownership or
+collaboration needs justify it.
+
+---
+
+## 11. Testing
 
 Tests should verify meaningful behaviour at the appropriate boundary.
 
@@ -355,9 +490,14 @@ is preferable to:
 Requirement traceability belongs in the Issue and Pull Request rather than in
 test names.
 
+Production source code is statically type checked with mypy.
+
+Tests are not required to pass mypy unless a future project need justifies
+extending static type checking to the test suite.
+
 ---
 
-## 10. Documentation impact
+## 12. Documentation impact
 
 Every meaningful development Issue should consider whether existing
 documentation needs to change.
@@ -383,7 +523,7 @@ Git history, Issues, and Pull Requests already provide that history.
 
 ---
 
-## 11. Architecture Decision Records
+## 13. Architecture Decision Records
 
 Significant architectural decisions should be recorded under:
 
@@ -405,7 +545,7 @@ rather than rewriting historical reasoning.
 
 ---
 
-## 12. Application versioning
+## 14. Application versioning
 
 Odysseus is versioned independently from other applications in the monorepo.
 
@@ -439,9 +579,16 @@ Released changes are recorded in:
 
 Git tags preserve the exact repository state for each release.
 
+Notable changes should be added to the `Unreleased` section of
+`apps/Odysseus/CHANGELOG.md` as part of the Pull Request that introduces them.
+
+Internal implementation details, routine refactors, test-only changes, and
+development-process changes should not be recorded unless they materially affect
+the application or its operation.
+
 ---
 
-## 13. Monorepo boundary
+## 15. Monorepo boundary
 
 Odysseus should remain self-contained within `apps/Odysseus/` unless something
 is genuinely shared across applications.
@@ -457,13 +604,17 @@ in the relevant Issue and Pull Request.
 
 ---
 
-## 14. Convention summary
+## 16. Convention summary
 
 The standard conventions are:
 
 ### Issue title
 
 `[Odysseus] <product outcome>`
+
+### Issue label
+
+`app:odysseus`
 
 ### Branch
 
@@ -497,6 +648,24 @@ Requirements:
 Issue:
 #...
 ```
+
+### Python environment
+
+Odysseus uses uv `0.11.21` with a project-local environment.
+
+`pyproject.toml`, `uv.lock`, and `.python-version` define the reproducible
+project environment.
+
+`.venv/` is generated locally and is not committed.
+
+### Main branch
+
+Protected by GitHub rules. Changes normally arrive through a Pull Request,
+required CI must pass, and Pull Requests are squash merged.
+
+### Required CI gate
+
+`Odysseus CI / Required gate`
 
 ### Release tag
 

@@ -11,12 +11,16 @@ requires-python = ">=3.12,<3.13"
 dependencies = []
 
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "mypy>=1.0",
     "pytest>=8.0",
     "ruff>=0.14",
 ]
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 
 [tool.pytest.ini_options]
@@ -35,12 +39,12 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = [
-    "E",    # pycodestyle errors
-    "F",    # Pyflakes
-    "I",    # import sorting
-    "UP",   # pyupgrade
-    "B",    # flake8-bugbear
-    "SIM",  # flake8-simplify
+    "E",
+    "F",
+    "I",
+    "UP",
+    "B",
+    "SIM",
 ]
 
 ignore = []
@@ -51,9 +55,9 @@ quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
 
+
 [tool.mypy]
 python_version = "3.12"
-
 files = ["src"]
 
 check_untyped_defs = true
@@ -67,5 +71,6 @@ warn_unused_configs = true
 show_error_codes = true
 pretty = true
 
-[tool.setuptools.packages.find]
-where = ["src"]
+
+[tool.uv]
+required-version = "==0.11.21"
