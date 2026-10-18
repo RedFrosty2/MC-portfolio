@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Recurring training availability</title>
+  </head>
+  <body>
+    <main>
+      <h1>Recurring training availability</h1>
+      <p>Choose AM, PM, or both for training. Choose REST on its own for an explicit rest day. Leave all three unchecked for ordinary unavailability.</p>
+      <form method="post" action="{{ url_for('update_availability') }}">
+      <table>
+        <caption>Current recurring week</caption>
+        <thead>
+          <tr>
+            <th scope="col">Weekday</th>
+            <th scope="col">AM</th>
+            <th scope="col">PM</th>
+            <th scope="col">Rest day</th>
+            <th scope="col">Day status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for day in availability.days %}
+          <tr>
+            <th scope="row">{{ day.weekday_label }}</th>
+            <td>
+              <label>
+                <input type="checkbox" name="{{ day.weekday_label|lower }}_am" value="on"{% if day.am_available %} checked{% endif %}>
+                {{ "AM available" if day.am_available else "AM unavailable" }}
+              </label>
+            </td>
+            <td>
+              <label>
+                <input type="checkbox" name="{{ day.weekday_label|lower }}_pm" value="on"{% if day.pm_available %} checked{% endif %}>
+                {{ "PM available" if day.pm_available else "PM unavailable" }}
+              </label>
+            </td>
+            <td>
+              <label>
+                <input type="checkbox" name="{{ day.weekday_label|lower }}_rest" value="on"{% if day.is_rest_day %} checked{% endif %}>
+                REST
+              </label>
+            </td>
+            <td>{% if day.is_rest_day %}REST{% elif day.am_available or day.pm_available %}Available{% else %}Unavailable{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <button type="submit">Save availability</button>
+      </form>
+    </main>
+  </body>
+</html>

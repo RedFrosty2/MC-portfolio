@@ -1,0 +1,69 @@
+@startuml
+title Odysseus - Application Layer
+
+left to right direction
+hide empty description
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 18
+skinparam ArrowColor #64748B
+skinparam ArrowThickness 2
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam defaultFontColor #0F172A
+skinparam TitleFontColor #0F172A
+
+skinparam rectangle {
+    BorderColor #CBD5E1
+    FontColor #0F172A
+}
+
+skinparam package {
+    BorderColor #94A3B8
+    FontColor #334155
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #D6B656
+    FontColor #334155
+}
+
+
+rectangle "<b>WEB ROUTE</b>\n<i>driving adapter</i>\n\nCalls application operations" as Web #E0F2FE
+
+package "application/" #F0FDFA {
+    rectangle "<b>availability.py</b>\n\nTrainingAvailabilityUseCases\n\n__init__(store)\nget_recurring_availability()\nupdate_recurring_availability(availability)" as UseCases #D1FAE5
+
+    rectangle "<b>contracts.py</b>\n\nTrainingAvailabilityStore\n<i>Protocol</i>\n\nload(): RecurringTrainingAvailability\nsave(availability): None" as Contract #CCFBF1
+}
+
+rectangle "<b>RecurringTrainingAvailability</b>\n<i>domain value</i>" as Domain #EDE9FE
+rectangle "<b>CONCRETE STORE OBJECT</b>\n<i>current runtime object:\nInMemoryTrainingAvailabilityStore</i>" as Adapter #FFEDD5
+
+Web --> UseCases : invokes
+UseCases --> Contract : source dependency
+UseCases --> Domain : accepts / returns
+Adapter ..> Contract : structurally satisfies
+UseCases --> Adapter : runtime calls injected object
+
+note bottom of UseCases
+The use case coordinates application behaviour.
+Currently GET delegates to load()
+and update delegates to save().
+end note
+
+note bottom of Contract
+The Protocol is a type-level contract.
+It is not another runtime object between
+the use case and the concrete adapter.
+end note
+
+note bottom of Adapter
+At runtime the use case holds the concrete object,
+while application source is typed against
+TrainingAvailabilityStore.
+end note
+
+@enduml

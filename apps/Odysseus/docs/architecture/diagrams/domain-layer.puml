@@ -1,0 +1,77 @@
+@startuml
+title Odysseus - Domain Layer
+
+top to bottom direction
+hide empty description
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 18
+skinparam ArrowColor #64748B
+skinparam ArrowThickness 2
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam defaultFontColor #0F172A
+skinparam TitleFontColor #0F172A
+
+skinparam rectangle {
+    BorderColor #CBD5E1
+    FontColor #0F172A
+}
+
+skinparam package {
+    BorderColor #94A3B8
+    FontColor #334155
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #D6B656
+    FontColor #334155
+}
+
+
+package "domain/availability.py" #FAF5FF {
+    rectangle "<b>Weekday</b>\n<i>StrEnum</i>\n\nmonday\ntuesday\nwednesday\nthursday\nfriday\nsaturday\nsunday" as Weekday #F3E8FF
+
+    rectangle "<b>DailyTrainingAvailability</b>\n<i>frozen dataclass</i>\n\nweekday: Weekday\nam_available: bool\npm_available: bool\nis_rest_day: bool" as Daily #EDE9FE
+
+    rectangle "<b>RecurringTrainingAvailability</b>\n<i>frozen dataclass</i>\n\ndays: tuple[DailyTrainingAvailability, ...]" as Recurring #E9D5FF
+}
+
+Recurring --> Daily : contains exactly one per weekday
+Daily --> Weekday : identifies day
+
+note right of Daily
+<b>Invariant</b>
+
+REST cannot coexist with
+AM or PM availability.
+
+Valid ordinary unavailability:
+AM=False
+PM=False
+REST=False
+
+Unavailable and explicit REST
+therefore remain different states.
+end note
+
+note right of Recurring
+<b>Invariant</b>
+
+A recurring week contains
+exactly one entry for each weekday.
+
+Missing or duplicate weekdays
+are rejected.
+end note
+
+note bottom of Recurring
+The domain owns training meaning and validity.
+
+It does not know about FastAPI, Jinja,
+forms, HTTP, or storage technology.
+end note
+
+@enduml

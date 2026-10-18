@@ -1,0 +1,75 @@
+@startuml
+title Odysseus - Adapters Layer
+
+left to right direction
+hide empty description
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 18
+skinparam ArrowColor #64748B
+skinparam ArrowThickness 2
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam defaultFontColor #0F172A
+skinparam TitleFontColor #0F172A
+
+skinparam rectangle {
+    BorderColor #CBD5E1
+    FontColor #0F172A
+}
+
+skinparam package {
+    BorderColor #94A3B8
+    FontColor #334155
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #D6B656
+    FontColor #334155
+}
+
+
+rectangle "<b>TrainingAvailabilityStore</b>\n<i>application Protocol</i>\n\nload()\nsave(...)" as Contract #CCFBF1
+
+package "adapters/in_memory/" #FFF7ED {
+    rectangle "<b>availability.py</b>\n\nInMemoryTrainingAvailabilityStore\n\nInitialized with a\nRecurringTrainingAvailability\n\nload() returns current value\nsave(...) replaces current value" as MemoryStore #FFEDD5
+}
+
+rectangle "<b>RecurringTrainingAvailability</b>\n<i>domain value held in memory</i>" as Domain #EDE9FE
+
+package "FUTURE ADAPTER FAMILIES" #F8FAFC {
+    rectangle "<b>PostgreSQL availability adapter</b>\n<i>planned</i>\n\nCould satisfy the same\nTrainingAvailabilityStore contract" as PostgresAdapter #FFF7ED
+
+    rectangle "<b>Planning adapter</b>\n<i>planned</i>\n\nLocal or self-hosted LLM boundary" as PlanningAdapter #FFF7ED
+
+    rectangle "<b>Integration adapters</b>\n<i>planned</i>\n\nGarmin / Hevy / Hyresult" as IntegrationAdapter #FFF7ED
+}
+
+rectangle "<b>EXTERNAL RESOURCES</b>\n<i>planned</i>\n\nPostgreSQL / local model / external services" as Resources #F1F5F9
+
+MemoryStore ..> Contract : satisfies structurally
+MemoryStore --> Domain : stores current value
+
+PostgresAdapter ..> Contract : future alternative
+PostgresAdapter --> Resources : persistence
+PlanningAdapter --> Resources : model invocation
+IntegrationAdapter --> Resources : external integration
+
+note bottom of MemoryStore
+This is the concrete adapter required
+for the current recurring-availability slice.
+
+It is intentionally small and process-local.
+end note
+
+note bottom of Contract
+Adapters point inward toward
+application-owned contracts.
+
+Application code does not import
+InMemoryTrainingAvailabilityStore.
+end note
+
+@enduml

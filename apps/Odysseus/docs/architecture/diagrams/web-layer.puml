@@ -1,0 +1,89 @@
+@startuml
+title Odysseus - Web Layer
+
+left to right direction
+hide empty description
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 18
+skinparam ArrowColor #64748B
+skinparam ArrowThickness 2
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam defaultFontColor #0F172A
+skinparam TitleFontColor #0F172A
+
+skinparam rectangle {
+    BorderColor #CBD5E1
+    FontColor #0F172A
+}
+
+skinparam package {
+    BorderColor #94A3B8
+    FontColor #334155
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #D6B656
+    FontColor #334155
+}
+
+
+rectangle "<b>BROWSER</b>\n\nGET /availability\nPOST /availability" as Browser #F8FAFC
+
+package "web/" #EFF6FF {
+    rectangle "<b>app.py</b>\n\ncreate_app(use_cases)\nCreates FastAPI\nRegisters the availability router" as App #E0F2FE
+
+    rectangle "<b>routes/availability.py</b>\n\nGET /availability\nPOST /availability\nCoordinates HTTP request flow\nUses injected application collaborator" as Routes #DBEAFE
+
+    rectangle "<b>forms.py</b>\n\nIncoming translation\nBrowser form values to domain-ready values" as Forms #EFF6FF
+
+    package "presentation/" #F5F3FF {
+        rectangle "<b>availability.py</b>\n\nTrainingAvailabilityDayView\nTrainingAvailabilityView\nbuild_training_availability_view(...)" as Presentation #EDE9FE
+    }
+
+    package "templates/" #F8FAFC {
+        rectangle "<b>availability.html</b>\n\nRenders Monday-Sunday\nAM / PM / REST / Unavailable" as Template #F5F3FF
+    }
+}
+
+rectangle "<b>TrainingAvailabilityUseCases</b>\n<i>application layer</i>" as UseCases #D1FAE5
+rectangle "<b>RecurringTrainingAvailability</b>\n<i>domain layer</i>" as Domain #EDE9FE
+
+Browser --> App : HTTP request
+App --> Routes : registered router\nmethod + path dispatch
+
+Routes --> UseCases : GET retrieve / POST update
+Routes --> Forms : POST only
+Forms --> Domain : constructs domain value
+
+UseCases --> Routes : GET returns domain value
+Routes --> Presentation : build display View
+Presentation --> Template : TrainingAvailabilityView
+Template --> Browser : HTML response
+
+Routes --> Browser : POST success redirects to GET
+
+note bottom of App
+create_app(...) receives the use-case object.
+The web layer does not construct a storage adapter.
+end note
+
+note bottom of Routes
+Routes coordinate HTTP flow.
+They do not own training rules or persistence.
+end note
+
+note bottom of Forms
+Forms understand browser and HTTP representation.
+Domain objects still own training validity.
+end note
+
+note bottom of Presentation
+Presentation performs outgoing translation:
+domain/application result to display-ready View.
+end note
+
+@enduml

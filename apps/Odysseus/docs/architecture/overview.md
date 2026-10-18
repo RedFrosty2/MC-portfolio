@@ -1,243 +1,217 @@
-# Odysseus — Architecture Overview
+# Architecture overview
 
-## Purpose
+Odysseus uses a pragmatic **ports-and-adapters (hexagonal) architecture** inside a Python application.
 
-This document describes the current high-level architecture of Odysseus.
+The architecture is intentionally documented at two levels:
 
-Odysseus uses a pragmatic ports-and-adapters architecture so that product and
-training behaviour remain independent of web frameworks, persistence technology,
-external integrations, and planning runtimes.
+1. `architecture-overview.puml` shows the whole system at a **top level**.
+2. Layer diagrams show the detail inside `web`, `application`, `domain`, and `adapters`.
 
-The architecture should evolve as real product capabilities require it.
+The overview should stay readable as Odysseus grows. Detailed classes, functions, translations, and invariants belong in the layer diagrams rather than being pushed into the top-level view.
 
-It should not be used as a reason to introduce abstractions, packages, adapters,
-or infrastructure before they have a concrete purpose.
+## Current implementation status
 
----
+The current implementation establishes the first end-to-end vertical slice for recurring training availability.
 
-## Architecture
+Today, the implemented path is:
 
-![Odysseus ports and adapters architecture](diagrams/architecture-overview.svg)
+```text
+Browser
+  -> FastAPI/Jinja web adapter
+  -> TrainingAvailabilityUseCases
+  -> TrainingAvailabilityStore contract
+  -> InMemoryTrainingAvailabilityStore
+  -> RecurringTrainingAvailability
+```
 
-Odysseus is divided into three broad areas:
+The web layer also translates domain/application output into a display-ready `TrainingAvailabilityView`, and translates submitted browser form values back into domain values.
 
-- the **driving side**, where interactions with the application begin;
-- the **Odysseus core**, containing application and domain behaviour;
-- the **driven side**, where the core reaches external capabilities through
-  adapters.
+PostgreSQL persistence, the local planning model, and Garmin / Hevy / Hyresult integrations remain planned architecture. They are shown in the top-level architecture only when clearly marked as planned rather than as completed implementation.
 
-External resources remain outside the Odysseus core.
+## Top-level architecture
 
----
+Source: [`diagrams/architecture-overview.svg`](diagrams/architecture-overview.svg)
 
-## Driving side
+The top-level diagram answers:
 
-Driving adapters translate external interactions into application behaviour.
+> What are the main architectural areas, and how do they depend on one another?
 
-For the current product, the primary driving adapter is the web application.
+Its main shape is:
 
-The web adapter is responsible for concerns such as:
+```text
+Athlete
+  |
+  v
+Web adapter
+  |
+  v
+Application use cases
+  |   |  -> outbound ports <- driven adapters
+  v
+Domain
+```
 
-- receiving athlete input;
-- handling web requests;
-- presenting application output;
-- translating forms and web interactions into application calls.
+Driving adapters start interaction with Odysseus. Application use cases coordinate product behaviour. The domain owns training meaning and validity. Outbound ports describe capabilities the application needs from outside the core, and driven adapters provide concrete implementations.
 
-Web-specific behaviour should not leak into the application or domain layers.
+## Layer diagrams
 
-FastAPI and other web technologies therefore belong on this side of the
-architecture.
+### Web layer
 
----
+Source: [`diagrams/web-layer.svg`](diagrams/web-layer.svg)
 
-## Application layer
+The web layer is the current **driving adapter**. It contains:
 
-The application layer coordinates Odysseus product behaviour.
+- `app.py` — creates FastAPI and registers the availability router;
+- `routes/availability.py` — handles `GET /availability` and `POST /availability`;
+- `forms.py` — translates incoming browser form values;
+- `presentation/availability.py` — builds display-ready Views;
+- `templates/availability.html` — renders HTML.
 
-A **use case** represents a meaningful application operation, such as generating
-a weekly plan or updating athlete availability.
+A useful directional model is:
 
-Use cases may:
+```text
+Incoming:
+Browser -> Route -> Forms -> Application / Domain
 
-- gather the context required for an operation;
-- invoke domain behaviour;
-- coordinate multiple domain concepts;
-- use outbound ports where persistence or another external capability is
-  required.
+Outgoing:
+Application / Domain -> Presentation -> Template -> Browser
+```
 
-Use cases should not contain:
+Routes coordinate the HTTP flow. They do not own training rules or persistence decisions.
 
-- HTTP or template concerns;
-- database-specific behaviour;
-- external integration logic;
-- planning-runtime-specific behaviour.
+### Application layer
 
-The public interface of a use case may itself act as the inbound port. A
-separate interface abstraction should only be introduced where it provides a
-real benefit.
+Source: [`diagrams/application-layer.svg`](diagrams/application-layer.svg)
 
-For weekly planning, the application layer also coordinates the planning cycle.
+The application layer exposes the product operations needed by the web layer.
 
-Odysseus prepares the authoritative athlete and evidence context before invoking
-the planning capability.
+The current availability use case is:
 
-The resulting candidate plan is then validated by Odysseus before it may become
-active.
+```text
+TrainingAvailabilityUseCases
+```
 
-If validation fails, the application may request a corrected plan using the
-validation failures as feedback. Planning is retried up to the product-defined
-limit before failing visibly.
+with operations to:
 
----
+- retrieve recurring availability;
+- update recurring availability.
 
-## Domain layer
+The application owns the outbound contract:
 
-The domain layer represents the training concepts and rules that make Odysseus
-what it is.
+```text
+TrainingAvailabilityStore
+```
 
-Examples include:
+which defines `load()` and `save(...)`.
 
-- goals and target events;
-- availability and explicit rest;
-- weekly plans;
-- running prescriptions;
-- strength prescriptions;
-- hybrid / HYROX prescriptions;
-- planning rules and constraints.
+The application source depends on that contract rather than on a concrete storage implementation.
 
-The domain should express these concepts without knowledge of:
+The Protocol is a **type-level contract**, not another runtime object inserted between the use case and adapter. At runtime, the use case holds the injected concrete store object and calls it directly.
 
-- FastAPI;
-- databases;
-- Garmin;
-- Hevy;
-- Hyresult;
-- planning models or runtimes;
-- deployment technology.
+### Domain layer
 
-The domain describes Odysseus behaviour rather than the technologies used to
-deliver it.
+Source: [`diagrams/domain-layer.svg`](diagrams/domain-layer.svg)
 
----
+The domain layer defines the meaning of recurring training availability.
 
-## Outbound ports
+Current types are:
 
-Outbound ports define capabilities the application requires from outside the
-core.
+- `Weekday`;
+- `DailyTrainingAvailability`;
+- `RecurringTrainingAvailability`.
 
-For example, the application may need:
+The domain protects its own invariants.
 
-- somewhere to persist and retrieve plans;
-- a capability capable of producing planning output.
+A rest day cannot also contain AM or PM training availability. Ordinary unavailability remains valid and distinct from explicit rest.
 
-The application owns these contracts.
+A recurring week must contain exactly one entry for each weekday.
 
-Concrete technologies do not define what the core needs.
+These rules belong in the domain because they must remain true regardless of whether availability is entered through FastAPI, a future API, a CLI, or another adapter.
 
-This dependency direction is fundamental:
+### Adapters layer
 
-`Application -> Port <- Adapter`
+Source: [`diagrams/adapters-layer.puml`](diagrams/adapters-layer.puml)
 
-rather than:
+The current concrete driven adapter is:
 
-`Application -> Concrete technology`
+```text
+InMemoryTrainingAvailabilityStore
+```
 
----
+It satisfies the `TrainingAvailabilityStore` Protocol structurally.
 
-## Driven adapters
+It keeps one `RecurringTrainingAvailability` value in process memory:
 
-Driven adapters implement outbound ports using concrete technology.
+- `load()` returns the current value;
+- `save(...)` replaces it.
 
-Examples expected within the current scope include:
+The adapter is deliberately small. It does not add serialization, generic repository abstractions, logging, thread-safety, or persistence machinery that the current feature does not require.
 
-- a persistence adapter;
-- a planning adapter.
+Future storage and integration mechanisms should normally be added as new adapters that satisfy application-owned contracts, rather than changing the application to depend directly on a technology.
 
-The persistence adapter translates between Odysseus application concepts and
-the chosen storage technology.
+## Availability web flow
 
-The planning adapter translates between Odysseus planning context and the local
-or self-hosted LLM used for planning.
+The executable walkthrough lives at:
 
-It is responsible for presenting structured context and planning instructions in
-the form required by the selected model/runtime and translating structured model
-output back across the application boundary.
+[`../notebooks/web/availability-web-flow.ipynb`](../notebooks/web/availability-web-flow.ipynb)
 
-The planning adapter does not decide athlete facts, hard constraints, plan
-validity, or the meaning of Odysseus domain objects.
+The notebook focuses specifically on how the web boundary works.
 
-The LLM provides coaching judgement within this boundary.
+For a read:
 
-Odysseus remains responsible for the authoritative athlete context, evidence
-context, structured representations, hard constraints, and validation of the
-candidate plan.
+```text
+GET /availability
+  -> FastAPI route
+  -> TrainingAvailabilityUseCases.get_recurring_availability()
+  -> store.load()
+  -> RecurringTrainingAvailability
+  -> build_training_availability_view(...)
+  -> availability.html
+  -> HTML response
+```
 
----
+For an update:
 
-## External resources
+```text
+POST /availability
+  -> FastAPI route
+  -> form translation
+  -> RecurringTrainingAvailability
+  -> TrainingAvailabilityUseCases.update_recurring_availability(...)
+  -> store.save(...)
+  -> redirect
+  -> GET /availability
+```
 
-For `v0.1`, the planning resource is a local or self-hosted LLM.
+This follows the POST / Redirect / GET pattern so refreshing the resulting page does not repeat the update.
 
-The exact model and serving/runtime technology are not fixed by this
-architecture. They remain replaceable behind the planning adapter and
-`PlanningCapability` port.
+## Dependency direction
 
-Future systems such as Garmin, Hevy, and Hyresult will also sit outside the
-Odysseus core and should be introduced through adapters when those capabilities
-enter active product scope.
+The central dependency rule is:
 
-They are intentionally absent from the current architecture diagram.
+> Dependencies should point inward toward Odysseus-owned abstractions and training concepts.
 
----
+In practical terms:
 
-## Dependency rule
+| Layer | May depend on | Should not depend on |
+| --- | --- | --- |
+| `domain/` | standard library and domain code | application, adapters, web |
+| `application/` | domain and application-owned contracts | concrete adapters, web |
+| `adapters/` | domain and application contracts | web |
+| `web/` | application and domain types needed for translation/presentation | concrete adapters |
 
-Dependencies should point toward Odysseus-owned behaviour and contracts.
+The outer composition step is allowed to know concrete implementations so that it can connect them. A dedicated composition root has not yet been introduced in the current Issue #2 slice; the current application factory receives its application collaborator from outside.
 
-In particular:
+## Why keep the diagrams separate?
 
-- driving adapters depend on application behaviour;
-- use cases depend on domain behaviour and outbound-port abstractions;
-- driven adapters depend on Odysseus-owned ports;
-- the domain depends on no web, persistence, or integration technology.
+The architecture overview should answer:
 
-This keeps external technology replaceable without forcing changes into the
-core product model.
+> How does the whole system fit together?
 
----
+The layer diagrams should answer:
 
-## Current architectural boundaries
+> What actually exists inside this layer, and what is each part responsible for?
 
-The architecture establishes direction without prematurely deciding every
-implementation detail.
+This keeps the top-level diagram useful as the system grows while still providing enough detail to understand the concrete Python design.
 
-The current architecture does **not** yet require decisions about:
-
-- the final persistence technology;
-- the specific local LLM model;
-- the model-serving/runtime technology;
-- whether lightweight current-research retrieval is added beyond the curated
-  evidence context;
-- Garmin adapter structure;
-- Hevy adapter structure;
-- Hyresult adapter structure;
-- authentication architecture;
-- background-job infrastructure;
-- deployment topology.
-
-Those decisions should be made when the corresponding product capability
-requires them.
-
----
-
-## Evolution rule
-
-Architecture documentation describes the system that exists or is actively
-being designed.
-
-When new product capabilities introduce new adapters, ports, infrastructure, or
-important architectural relationships, this document and its diagrams should be
-updated.
-
-The architecture should grow from product needs rather than from a desire to
-pre-design the finished system.
+The layer diagrams are living documentation. When a meaningful new component is added to a layer, its layer diagram should be reviewed. The top-level overview should change only when the system-level architecture changes.
