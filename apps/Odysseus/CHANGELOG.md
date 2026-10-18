@@ -18,6 +18,12 @@ Release tag format:
 
 ### Added
 
+- Recurring weekly training availability with independent AM and PM periods.
+- Explicit rest days distinct from ordinary training unavailability.
+- Web workflow for viewing and updating recurring availability.
+- In-memory availability storage behind an application-owned storage contract.
+- Architecture diagrams and executable documentation covering the availability flow.
+
 ### Changed
 
 ### Fixed
