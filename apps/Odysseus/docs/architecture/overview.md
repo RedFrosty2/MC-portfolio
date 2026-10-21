@@ -26,7 +26,7 @@ Browser
 
 The web layer also translates domain/application output into a display-ready `TrainingAvailabilityView`, and translates submitted browser form values back into domain values.
 
-Goals and target events have domain models, application CRUD operations, and a read-only future-target query through an application-owned storage contract, implemented by `InMemoryGoalsAndEventsStore`. This capability has no web flow yet.
+Goals and target events have domain models, application CRUD operations, and a read-only future-target query through an application-owned storage contract, implemented by `InMemoryGoalsAndEventsStore`. Pure presentation Views and a builder prepare supplied goal/event values for display; this capability has no routes, forms, or templates yet.
 
 PostgreSQL persistence, the local planning model, and Garmin / Hevy / Hyresult integrations remain planned architecture. They are shown in the top-level architecture only when clearly marked as planned rather than as completed implementation.
 
@@ -59,7 +59,7 @@ Driving adapters start interaction with Odysseus. Application use cases coordina
 
 ### Web layer
 
-Source: [`diagrams/web-layer.svg`](diagrams/web-layer.svg)
+Source: [`diagrams/web-layer.puml`](diagrams/web-layer.puml)
 
 The web layer is the current **driving adapter**. It contains:
 
@@ -67,6 +67,7 @@ The web layer is the current **driving adapter**. It contains:
 - `routes/availability.py` — handles `GET /availability` and `POST /availability`;
 - `forms.py` — translates incoming browser form values;
 - `presentation/availability.py` — builds display-ready Views;
+- `presentation/goals_and_events.py` — translates supplied goals/events into immutable `GoalRowView`, `TargetEventRowView`, and `GoalsAndEventsView` values;
 - `templates/availability.html` — renders HTML.
 
 A useful directional model is:
@@ -80,6 +81,8 @@ Application / Domain -> Presentation -> Template -> Browser
 ```
 
 Routes coordinate the HTTP flow. They do not own training rules or persistence decisions.
+
+The goals/events builder preserves supplied ordering and all records, including history and every status. Row UUIDs remain available. It renders readable status/type labels (including `HYROX`) and dates such as `01 May 2030`. A goal's own target date takes precedence; without one, a resolved event supplies `Event date: DD Mon YYYY`, a standalone goal shows `No deadline`, and a missing event yields `Event date unavailable`. A UUID lookup resolves linked event names. A standalone goal has a `None` linked-event label, while a missing reference shows `Unresolved event reference`. This pure translation does not query storage, call use cases, filter planning relevance, change statuses, or produce HTML/URLs. It is not yet connected to a goals/events HTTP flow.
 
 ### Application layer
 

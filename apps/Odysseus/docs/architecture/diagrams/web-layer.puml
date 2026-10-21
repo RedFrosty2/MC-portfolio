@@ -42,6 +42,8 @@ package "web/" #EFF6FF {
 
     package "presentation/" #F5F3FF {
         rectangle "<b>availability.py</b>\n\nTrainingAvailabilityDayView\nTrainingAvailabilityView\nbuild_training_availability_view(...)" as Presentation #EDE9FE
+
+        rectangle "<b>goals_and_events.py</b>\n\nGoalRowView\nTargetEventRowView\nGoalsAndEventsView\n<i>frozen dataclasses; row UUIDs retained</i>\n\nbuild_goals_and_events_view(goals, target_events)" as GoalsPresentation #EDE9FE
     }
 
     package "templates/" #F8FAFC {
@@ -51,6 +53,7 @@ package "web/" #EFF6FF {
 
 rectangle "<b>TrainingAvailabilityUseCases</b>\n<i>application layer</i>" as UseCases #D1FAE5
 rectangle "<b>RecurringTrainingAvailability</b>\n<i>domain layer</i>" as Domain #EDE9FE
+rectangle "<b>Goal and TargetEvent</b>\n<i>supplied domain values</i>" as GoalsDomain #EDE9FE
 
 Browser --> App : HTTP request
 App --> Routes : registered router\nmethod + path dispatch
@@ -62,6 +65,7 @@ Forms --> Domain : constructs domain value
 UseCases --> Routes : GET returns domain value
 Routes --> Presentation : build display View
 Presentation --> Template : TrainingAvailabilityView
+GoalsPresentation --> GoalsDomain : translates supplied values only
 Template --> Browser : HTML response
 
 Routes --> Browser : POST success redirects to GET
@@ -84,6 +88,17 @@ end note
 note bottom of Presentation
 Presentation performs outgoing translation:
 domain/application result to display-ready View.
+end note
+
+note bottom of GoalsPresentation
+Preserves supplied order and every record,
+including completed, cancelled, inactive, and past entries.
+Formats enums and dates; resolves event names by UUID.
+No deadline, no link, and unresolved links remain distinct.
+
+No storage access, use-case calls, relevance filtering,
+status changes, HTTP handling, HTML, or URL construction.
+Goals/events routes, forms, and templates are not implemented.
 end note
 
 @enduml
