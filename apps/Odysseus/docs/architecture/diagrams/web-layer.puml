@@ -38,7 +38,7 @@ package "web/" #EFF6FF {
 
     rectangle "<b>routes/availability.py</b>\n\nGET /availability\nPOST /availability\nCoordinates HTTP request flow\nUses injected application collaborator" as Routes #DBEAFE
 
-    rectangle "<b>forms.py</b>\n\nIncoming translation\nBrowser form values to domain-ready values" as Forms #EFF6FF
+    rectangle "<b>forms.py</b>\n\nparse_training_availability_form(body)\n\nparse_goal_form(body): GoalFormValues\nparse_target_event_form(body): TargetEventFormValues\n\nGoalFormValues / TargetEventFormValues\n<i>frozen dataclasses; no entity identity fields</i>\n\nIncoming URL-encoded field translation" as Forms #EFF6FF
 
     package "presentation/" #F5F3FF {
         rectangle "<b>availability.py</b>\n\nTrainingAvailabilityDayView\nTrainingAvailabilityView\nbuild_training_availability_view(...)" as Presentation #EDE9FE
@@ -59,8 +59,8 @@ Browser --> App : HTTP request
 App --> Routes : registered router\nmethod + path dispatch
 
 Routes --> UseCases : GET retrieve / POST update
-Routes --> Forms : POST only
-Forms --> Domain : constructs domain value
+Routes --> Forms : availability POST only
+Forms --> Domain : availability parser constructs week
 
 UseCases --> Routes : GET returns domain value
 Routes --> Presentation : build display View
@@ -81,8 +81,18 @@ They do not own training rules or persistence.
 end note
 
 note bottom of Forms
-Forms understand browser and HTTP representation.
-Domain objects still own training validity.
+Pure parsers accept decoded URL-encoded bodies,
+without Request objects or HTTP responses.
+Goal/event parsers return typed fields, not entities.
+
+Required fields, duplicate values, enums, UUIDs,
+and strict YYYY-MM-DD dates are checked here.
+Optional blank goal dates/event references become None.
+Past dates are valid; text is trimmed but may be blank.
+
+Domain constructors own title/name validity.
+Application use cases own event references and lifecycle.
+No storage access or identity generation occurs here.
 end note
 
 note bottom of Presentation
@@ -98,7 +108,7 @@ No deadline, no link, and unresolved links remain distinct.
 
 No storage access, use-case calls, relevance filtering,
 status changes, HTTP handling, HTML, or URL construction.
-Goals/events routes, forms, and templates are not implemented.
+Goals/events routes and templates are not implemented.
 end note
 
 @enduml

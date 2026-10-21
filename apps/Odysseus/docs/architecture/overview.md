@@ -26,7 +26,7 @@ Browser
 
 The web layer also translates domain/application output into a display-ready `TrainingAvailabilityView`, and translates submitted browser form values back into domain values.
 
-Goals and target events have domain models, application CRUD operations, and a read-only future-target query through an application-owned storage contract, implemented by `InMemoryGoalsAndEventsStore`. Pure presentation Views and a builder prepare supplied goal/event values for display; this capability has no routes, forms, or templates yet.
+Goals and target events have domain models, application CRUD operations, and a read-only future-target query through an application-owned storage contract, implemented by `InMemoryGoalsAndEventsStore`. Pure form parsers translate incoming values, while presentation Views and a builder prepare supplied goal/event values for display. This capability has no HTTP routes or HTML templates yet.
 
 PostgreSQL persistence, the local planning model, and Garmin / Hevy / Hyresult integrations remain planned architecture. They are shown in the top-level architecture only when clearly marked as planned rather than as completed implementation.
 
@@ -65,7 +65,7 @@ The web layer is the current **driving adapter**. It contains:
 
 - `app.py` — creates FastAPI and registers the availability router;
 - `routes/availability.py` — handles `GET /availability` and `POST /availability`;
-- `forms.py` — translates incoming browser form values;
+- `forms.py` — translates availability submissions into domain weeks and goal/event submissions into typed form values;
 - `presentation/availability.py` — builds display-ready Views;
 - `presentation/goals_and_events.py` — translates supplied goals/events into immutable `GoalRowView`, `TargetEventRowView`, and `GoalsAndEventsView` values;
 - `templates/availability.html` — renders HTML.
@@ -81,6 +81,10 @@ Application / Domain -> Presentation -> Template -> Browser
 ```
 
 Routes coordinate the HTTP flow. They do not own training rules or persistence decisions.
+
+`parse_goal_form(body)` and `parse_target_event_form(body)` accept decoded URL-encoded submissions and return frozen `GoalFormValues` and `TargetEventFormValues`. They trim title/name text and parse domain enums, HTML `YYYY-MM-DD` dates, and optional event UUID references. Missing required fields, duplicate recognized fields, and malformed values raise clear `ValueError` messages. Optional blank or omitted goal dates and event references become `None`; past dates remain valid.
+
+The form values contain no entity identity fields. These parsers neither construct `Goal`/`TargetEvent` entities nor generate UUIDs, access storage, or call use cases. Blank title/name validity remains with domain constructors, and event existence, cancellation, and other relationship decisions remain with the application. The same pure parsers support create/edit input; no goals/events HTTP flow is connected yet. Existing availability form parsing is unchanged.
 
 The goals/events builder preserves supplied ordering and all records, including history and every status. Row UUIDs remain available. It renders readable status/type labels (including `HYROX`) and dates such as `01 May 2030`. A goal's own target date takes precedence; without one, a resolved event supplies `Event date: DD Mon YYYY`, a standalone goal shows `No deadline`, and a missing event yields `Event date unavailable`. A UUID lookup resolves linked event names. A standalone goal has a `None` linked-event label, while a missing reference shows `Unresolved event reference`. This pure translation does not query storage, call use cases, filter planning relevance, change statuses, or produce HTML/URLs. It is not yet connected to a goals/events HTTP flow.
 
