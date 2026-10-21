@@ -95,8 +95,8 @@ It has no dependency on HTTP or storage technology.
 end note
 
 note bottom of MemoryAdapters
-The recurring-availability slice currently uses
-an in-memory adapter. Other driven-side areas are
+Recurring availability and goals/target events
+have in-memory storage adapters. Other driven-side areas are
 planned architecture and are not yet implemented.
 end note
 

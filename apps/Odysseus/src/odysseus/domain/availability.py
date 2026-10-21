@@ -1,8 +1,12 @@
+"""Define recurring training opportunities and explicit rest constraints."""
+
 from dataclasses import dataclass
 from enum import StrEnum
 
 
 class Weekday(StrEnum):
+    """Weekdays declared in Monday-to-Sunday order with lowercase values."""
+
     MONDAY = "monday"
     TUESDAY = "tuesday"
     WEDNESDAY = "wednesday"
@@ -14,6 +18,15 @@ class Weekday(StrEnum):
 
 @dataclass(frozen=True)
 class DailyTrainingAvailability:
+    """An immutable day's AM/PM opportunities and explicit rest designation.
+
+    Explicit rest cannot coexist with AM or PM availability. All three flags
+    may be false, representing ordinary unavailability rather than rest.
+
+    Raises:
+        ValueError: If an explicit rest day also has training availability.
+    """
+
     weekday: Weekday
     am_available: bool
     pm_available: bool
@@ -26,6 +39,14 @@ class DailyTrainingAvailability:
 
 @dataclass(frozen=True)
 class RecurringTrainingAvailability:
+    """A complete immutable week containing each weekday exactly once.
+
+    The supplied tuple order is retained; presentation owns display ordering.
+
+    Raises:
+        ValueError: If weekdays are missing or duplicated.
+    """
+
     days: tuple[DailyTrainingAvailability, ...]
 
     def __post_init__(self) -> None:

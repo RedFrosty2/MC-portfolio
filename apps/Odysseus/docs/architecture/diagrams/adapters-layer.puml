@@ -32,12 +32,16 @@ skinparam note {
 
 
 rectangle "<b>TrainingAvailabilityStore</b>\n<i>application Protocol</i>\n\nload()\nsave(...)" as Contract #CCFBF1
+rectangle "<b>GoalsAndEventsStore</b>\n<i>application Protocol</i>\n\nload(): GoalsAndEventsSnapshot\nsave(snapshot): None" as GoalsContract #CCFBF1
 
 package "adapters/in_memory/" #FFF7ED {
     rectangle "<b>availability.py</b>\n\nInMemoryTrainingAvailabilityStore\n\nInitialized with a\nRecurringTrainingAvailability\n\nload() returns current value\nsave(...) replaces current value" as MemoryStore #FFEDD5
+
+    rectangle "<b>goals_and_events.py</b>\n\nInMemoryGoalsAndEventsStore\n\nInitially empty or supplied\nGoalsAndEventsSnapshot\n\nload() returns current snapshot\nsave(snapshot) replaces it" as GoalsMemoryStore #FFEDD5
 }
 
 rectangle "<b>RecurringTrainingAvailability</b>\n<i>domain value held in memory</i>" as Domain #EDE9FE
+rectangle "<b>GoalsAndEventsSnapshot</b>\n<i>immutable application value held in memory</i>\n\ngoals: tuple[Goal, ...]\ntarget_events: tuple[TargetEvent, ...]" as GoalsSnapshot #CCFBF1
 
 package "FUTURE ADAPTER FAMILIES" #F8FAFC {
     rectangle "<b>PostgreSQL availability adapter</b>\n<i>planned</i>\n\nCould satisfy the same\nTrainingAvailabilityStore contract" as PostgresAdapter #FFF7ED
@@ -51,6 +55,8 @@ rectangle "<b>EXTERNAL RESOURCES</b>\n<i>planned</i>\n\nPostgreSQL / local model
 
 MemoryStore ..> Contract : satisfies structurally
 MemoryStore --> Domain : stores current value
+GoalsMemoryStore ..> GoalsContract : satisfies structurally
+GoalsMemoryStore --> GoalsSnapshot : stores current snapshot
 
 PostgresAdapter ..> Contract : future alternative
 PostgresAdapter --> Resources : persistence
@@ -70,6 +76,16 @@ application-owned contracts.
 
 Application code does not import
 InMemoryTrainingAvailabilityStore.
+end note
+
+note bottom of GoalsMemoryStore
+One snapshot per store instance, held in process memory.
+Goal and TargetEvent objects and UUIDs are preserved.
+Saving replaces the snapshot rather than merging it.
+
+No conversion, copying, or relationship rules.
+Relationship validation and event unlinking remain
+in GoalsAndEventsUseCases.
 end note
 
 @enduml

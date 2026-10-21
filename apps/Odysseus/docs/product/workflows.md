@@ -16,11 +16,48 @@ introduced.
 
 ---
 
+## Cancel a target event or goal
+
+The athlete explicitly cancels a target event. Odysseus marks the event and all
+its ACTIVE linked goals as CANCELLED together, retaining the links and all other
+goal details. COMPLETED, INACTIVE, and already CANCELLED linked goals, goals for
+other events, and standalone goals remain unchanged.
+
+This relationship is one-way: cancelling an individual goal does not cancel its
+event or any other goal linked to that event.
+
+Reactivating an event leaves its cancelled goals cancelled. Individual goals
+can be updated explicitly afterwards. An attempt to create or update an ACTIVE
+goal linked to a still-CANCELLED event is rejected without saving changes.
+
+Completing or deactivating an event does not trigger goal cancellation, and
+passing dates do not trigger status changes. Deleting an event is distinct from
+cancelling it: deletion removes the event and unlinks its goals while preserving
+their statuses.
+
+---
+
+## Select future preparation targets
+
+For a supplied reference date, Odysseus selects ACTIVE goals with no target date
+or a target date on or after that date, and ACTIVE events dated on or after it.
+Linked goals also require their referenced event to exist and qualify. Targets
+dated exactly on the reference date are included.
+
+The selection retains stored order and leaves all records and statuses intact.
+All excluded records remain accessible through ordinary list and retrieve
+operations. Past and completed records can inform historical context without
+being treated as upcoming preparation targets. This query does not calculate
+recovery windows or generate a training plan.
+
+---
+
 ## Build planning context
 
 Before generating a training week, Odysseus builds a structured planning context
-from authoritative athlete information, current training state, learned
-preferences, and evidence-informed training knowledge.
+from authoritative athlete information, current training state, explicit
+preferences, any available inferred preferences, and evidence-informed training
+knowledge.
 
 ![Build planning context](diagrams/planning-context.svg)
 
@@ -32,7 +69,7 @@ Important product rules:
   availability;
 - explicit rest remains a hard constraint;
 - athlete preferences are planning context, not mandatory rules;
-- learned preferences may influence planning without becoming hard constraints;
+- inferred preferences may influence planning without becoming hard constraints;
 - completed-training and recovery context describe the athlete's current state;
 - relevant evidence-informed training principles are supplied explicitly to the
   planner;
@@ -63,7 +100,10 @@ The LLM may decide:
 - recovery balance;
 - exercise selection;
 - interaction between running, strength, and hybrid training;
-- whether athlete preferences should be followed or overridden.
+- when prescribed training should differ from athlete preferences.
+
+Meaningful departures from explicit preferences are explained without
+overwriting those preferences.
 
 Odysseus retains responsibility for authoritative athlete facts, hard
 constraints, structured representations, and validation.

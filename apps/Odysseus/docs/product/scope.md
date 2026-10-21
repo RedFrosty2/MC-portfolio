@@ -69,10 +69,13 @@ This includes:
 - recurring training availability;
 - dated availability exceptions;
 - explicit rest requirements;
-- athlete training preferences;
-- learned athlete preferences;
+- explicit athlete training preferences;
 - representative recent completed training;
-- relevant recovery and progression context.
+- relevant recovery and progression context;
+- relevant training evidence.
+
+Inferred preferences may contribute where available, but `v0.1` does not require
+a full preference-learning system. Richer preference management remains a separate capability and is not required for the initial planning core.
 
 Recent training history may initially be supplied manually or through
 representative application data.
@@ -118,7 +121,7 @@ Odysseus owns:
 - goals and target events;
 - completed-training context;
 - recovery and progression context;
-- learned athlete preferences;
+- explicit athlete preferences and any available inferred preferences;
 - evidence context;
 - structured planning inputs and outputs;
 - validation of hard constraints and plan structure.
@@ -164,14 +167,16 @@ Planning should be capable of considering factors such as:
 - fatigue management;
 - periodisation.
 
-Athlete preferences influence planning but do not dictate it.
+Explicit athlete preferences are considered alongside goals, events,
+availability, recovery, and training evidence. Preferences influence planning
+but are not unconditional instructions.
 
 Odysseus may prescribe a different weekly structure where that better supports
 the athlete's goals, recovery, current context, and evidence-informed training
 practice.
 
 Meaningful departures from athlete preferences should have an understandable
-training rationale.
+training rationale, while the athlete's explicit preferences remain preserved.
 
 Odysseus should provide explicit evidence-informed training context to the
 planner rather than relying solely on the model's pretrained knowledge.

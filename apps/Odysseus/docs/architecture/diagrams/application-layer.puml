@@ -37,16 +37,32 @@ package "application/" #F0FDFA {
     rectangle "<b>availability.py</b>\n\nTrainingAvailabilityUseCases\n\n__init__(store)\nget_recurring_availability()\nupdate_recurring_availability(availability)" as UseCases #D1FAE5
 
     rectangle "<b>contracts.py</b>\n\nTrainingAvailabilityStore\n<i>Protocol</i>\n\nload(): RecurringTrainingAvailability\nsave(availability): None" as Contract #CCFBF1
+
+    rectangle "<b>goals_and_events.py</b>\n\nGoalsAndEventsUseCases\n\n__init__(store)\nget_future_planning_targets(as_of: date): FuturePlanningTargets\nlist_goals(): tuple[Goal, ...]\nget_goal(goal_id): Goal\ncreate_goal(...): Goal\nupdate_goal(goal): None\ndelete_goal(goal_id): None\nlist_target_events(): tuple[TargetEvent, ...]\nget_target_event(event_id): TargetEvent\ncreate_target_event(...): TargetEvent\nupdate_target_event(event): None\ndelete_target_event(event_id): None" as GoalsUseCases #D1FAE5
+
+    rectangle "<b>goals_and_events.py</b>\n\nFuturePlanningTargets\n<i>frozen dataclass</i>\n\ngoals: tuple[Goal, ...]\ntarget_events: tuple[TargetEvent, ...]" as FutureTargets #CCFBF1
+
+    rectangle "<b>contracts.py</b>\n\nGoalsAndEventsStore\n<i>Protocol</i>\n\nload(): GoalsAndEventsSnapshot\nsave(snapshot): None" as GoalsContract #CCFBF1
+
+    rectangle "<b>contracts.py</b>\n\nGoalsAndEventsSnapshot\n<i>frozen dataclass</i>\n\ngoals: tuple[Goal, ...] = ()\ntarget_events: tuple[TargetEvent, ...] = ()" as Snapshot #CCFBF1
 }
 
 rectangle "<b>RecurringTrainingAvailability</b>\n<i>domain value</i>" as Domain #EDE9FE
 rectangle "<b>CONCRETE STORE OBJECT</b>\n<i>current runtime object:\nInMemoryTrainingAvailabilityStore</i>" as Adapter #FFEDD5
+rectangle "<b>Goal and TargetEvent</b>\n<i>domain values</i>\n\nOwn title/name validity\nand explicit status/date fields" as GoalsDomain #EDE9FE
 
 Web --> UseCases : invokes
 UseCases --> Contract : source dependency
 UseCases --> Domain : accepts / returns
 Adapter ..> Contract : structurally satisfies
 UseCases --> Adapter : runtime calls injected object
+GoalsUseCases --> GoalsContract : loads / saves one replacement snapshot
+GoalsContract --> Snapshot : loads / saves
+GoalsUseCases --> Snapshot : replaces on mutation
+GoalsUseCases --> GoalsDomain : creates / accepts / returns
+Snapshot --> GoalsDomain : contains tuples
+GoalsUseCases --> FutureTargets : returns read-only selection
+FutureTargets --> GoalsDomain : retains original objects / order
 
 note bottom of UseCases
 The use case coordinates application behaviour.
@@ -64,6 +80,51 @@ note bottom of Adapter
 At runtime the use case holds the concrete object,
 while application source is typed against
 TrainingAvailabilityStore.
+end note
+
+note bottom of GoalsUseCases
+Creation assigns UUIDs with uuid4().
+Updates accept complete domain values.
+
+Non-None goal event references must exist.
+Missing records/references raise LookupError.
+ACTIVE goals cannot link to CANCELLED events:
+create/update raises ValueError without saving.
+
+update_target_event(CANCELLED) cancels only
+ACTIVE linked goals, keeping their other fields.
+Event and goal changes use one snapshot save.
+Other goal statuses and unrelated goals are unchanged.
+
+Cancelling a goal does not affect its event or peers.
+Reactivating an event does not reactivate goals.
+COMPLETED/INACTIVE events do not cancel goals.
+
+Deleting a goal leaves its event untouched.
+Deleting an event unlinks every linked goal,
+preserving all other goal fields.
+Removal and unlinking use one snapshot save.
+
+Domain validity is not duplicated here.
+Passing dates do not change statuses.
+end note
+
+note bottom of GoalsContract
+Application-owned synchronous contract.
+No goals/events web flow is implemented.
+end note
+
+note bottom of FutureTargets
+Required explicit as_of date; same-day dates qualify.
+One snapshot load; no save or status changes.
+
+ACTIVE goals: undated or target_date >= as_of.
+ACTIVE events: event_date >= as_of.
+Linked goals additionally require a qualifying event.
+Missing/past/non-active events exclude linked goals.
+
+Historical records remain accessible through list/get.
+No ranking, recovery windows, or planning algorithm.
 end note
 
 @enduml

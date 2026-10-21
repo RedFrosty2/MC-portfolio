@@ -172,7 +172,7 @@ Odysseus should determine and provide facts such as:
 - goals and target events;
 - completed-training context;
 - recovery and progression context;
-- learned athlete preferences;
+- explicit and inferred athlete preferences;
 - evidence context.
 
 The local planning model may use that context to decide:
@@ -184,7 +184,21 @@ The local planning model may use that context to decide:
 - recovery balance;
 - exercise selection;
 - interaction between training modalities;
-- when a preference should be overridden.
+- when prescribed training should differ from athlete preferences.
+
+Athlete-stated preferences and Odysseus's coaching recommendations are distinct.
+Training preferences are soft inputs; availability and explicit rest are hard
+constraints.
+
+Evidence-informed effectiveness takes priority over soft preferences where
+there is a meaningful conflict. This does not imply one universally optimal
+training method: recommendations should account for individual context,
+feasibility, recovery, adherence, and evidence quality.
+
+Explicit and inferred preferences must remain distinguishable. When a
+recommendation differs from an explicit preference, preserve the stated
+preference and explain the relevant deviation rather than silently overwriting
+it.
 
 Odysseus must then validate the resulting structured plan before it becomes
 active.

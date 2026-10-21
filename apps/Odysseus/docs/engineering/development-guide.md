@@ -138,6 +138,64 @@ should be understood.
 If implementation reveals a new architectural decision, pause the feature and
 make that decision explicitly before continuing.
 
+### Incremental implementation steps
+
+Develop each bounded capability in small, agreed steps:
+
+1. Agree the design and scope of one implementation step.
+2. Implement that step 
+4. Run the local quality checks.
+5. Commit the approved step separately with a descriptive development message.
+6. Continue to the next step.
+
+Each approved step should have its own development commit. These commits are
+squashed when the Pull Request is merged.
+
+### Python documentation
+
+Use Google-style Python docstrings following PEP 257 whenever code is created
+or meaningfully modified.
+
+- Public modules, classes, and functions should communicate their meaningful
+  purpose, contract, and important behaviour.
+- Use `Args`, `Returns`, `Raises`, and `Attributes` sections where they add useful
+  information rather than repeating names and type annotations.
+- Document non-obvious domain invariants, application orchestration, side
+  effects, and important boundary behaviour.
+- Use inline comments primarily to explain why, rather than narrating obvious
+  operations. Avoid boilerplate, generated narration, and duplicate documentation.
+- Tests should use descriptive, behaviour-oriented names; docstrings are not
+  mandatory for self-explanatory tests.
+
+Improve documentation whenever code is created or meaningfully modified. Short,
+accurate one-line docstrings are sufficient for simple operations. Document
+constructor assumptions on the class when a separate constructor docstring
+would only duplicate them.
+
+The existing `uv run ruff check .` command enforces a focused initial set of
+[pydocstyle rules](https://docs.astral.sh/ruff/rules/#pydocstyle-d), using Ruff's
+Google docstring convention:
+
+| Rule | Enforced convention |
+| --- | --- |
+| `D100` | Public Python modules have a docstring. |
+| `D101` | Public classes have a docstring. |
+| `D102` | Public methods have a docstring. |
+| `D103` | Public functions have a docstring. |
+| `D205` | A multiline docstring separates its summary and description. |
+| `D415` | The summary ends with appropriate punctuation. |
+
+`tests/**/*.py` is exempt from `D100` through `D103`; descriptive fixture, helper,
+and test names take priority over repetitive presence-only documentation.
+`D205` and `D415` still apply to any docstrings supplied in tests.
+
+The full `D` family is not enabled. In particular, package-initializer (`D104`),
+special-method (`D105`), and constructor (`D107`) presence rules are not selected.
+Empty package initializers can stay empty, and domain validation hooks can rely
+on the model's documented invariants. Detailed section and parameter rules are
+also left out to avoid low-value boilerplate; meaningful contracts remain a
+review responsibility.
+
 ---
 
 ## 5. Development commits

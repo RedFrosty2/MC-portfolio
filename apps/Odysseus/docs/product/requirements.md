@@ -9,6 +9,7 @@ Technology, architecture, database design, APIs, and package structure belong
 elsewhere.
 
 The product vision in [`vision.md`](vision.md) is the north star for these requirements.
+The [product glossary](glossary.md) defines the shared terminology used here.
 
 ---
 
@@ -96,7 +97,7 @@ This may include:
 
 - running races;
 - HYROX events;
-- other training targets that should influence planning.
+- other dated participation events relevant to planning.
 
 ### GOAL-03 — Time relevance
 
@@ -105,15 +106,49 @@ Goals and races must have time-bounded relevance.
 Completed, expired, cancelled, or otherwise inactive goals should not continue
 to drive future plans as though they were still active.
 
+Future preparation targets are selected as of an explicitly supplied date:
+
+- a standalone goal must be ACTIVE and have no target date or a target date on
+  or after that date;
+- an event must be ACTIVE and dated on or after that date;
+- an event-linked goal must satisfy its own status/date conditions and reference
+  an existing event that satisfies the event conditions.
+
+The same-day boundary is inclusive. Missing, past, or non-active linked events
+exclude their goals from this selection. Selection preserves stored order and
+does not change statuses or remove historical records.
+
 ### GOAL-04 — Goal status
 
 Odysseus must retain enough information to distinguish active, completed,
 cancelled, and otherwise inactive goals or races.
 
+Goals and target events are separate concepts, but an event-linked goal depends
+on its referenced event. When an event is explicitly changed to CANCELLED:
+
+- all ACTIVE goals linked to it become CANCELLED;
+- COMPLETED, INACTIVE, and already CANCELLED linked goals keep their statuses;
+- unrelated and standalone goals remain unchanged;
+- the event change and affected goal changes take effect together.
+
+Cancelling an individual goal leaves its event and other linked goals unchanged.
+Reactivating a cancelled event does not reactivate its goals; the athlete may
+explicitly update individual goals later. Creating or updating an ACTIVE goal
+linked to a CANCELLED event must be rejected rather than silently changing the
+goal's status.
+
+Changing an event to COMPLETED or INACTIVE does not automatically cancel linked
+goals. Dates passing do not by themselves change statuses. Deleting an event
+unlinks its goals without deleting them or changing their statuses.
+
 ### GOAL-05 — Planning context
 
 Active goals and races should be available as context when future training is
 planned.
+
+Future preparation targets are distinct from retained historical context.
+Past and completed records remain accessible through ordinary list and retrieve
+operations, even when excluded from the future-target query.
 
 ---
 

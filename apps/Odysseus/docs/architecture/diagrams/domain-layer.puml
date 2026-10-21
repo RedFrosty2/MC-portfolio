@@ -39,8 +39,49 @@ package "domain/availability.py" #FAF5FF {
     rectangle "<b>RecurringTrainingAvailability</b>\n<i>frozen dataclass</i>\n\ndays: tuple[DailyTrainingAvailability, ...]" as Recurring #E9D5FF
 }
 
+package "domain/goals.py" #FAF5FF {
+    rectangle "<b>GoalStatus</b>\n<i>StrEnum</i>\n\nactive\ncompleted\ncancelled\ninactive" as GoalStatus #F3E8FF
+
+    rectangle "<b>Goal</b>\n<i>frozen dataclass</i>\n\nid: UUID\ntitle: str\nstatus: GoalStatus\ntarget_date: date | None = None\ntarget_event_id: UUID | None = None" as Goal #EDE9FE
+}
+
+package "domain/target_events.py" #FAF5FF {
+    rectangle "<b>TargetEventType</b>\n<i>StrEnum</i>\n\nrunning\nhyrox\nstrength\nother" as TargetEventType #F3E8FF
+
+    rectangle "<b>TargetEventStatus</b>\n<i>StrEnum</i>\n\nactive\ncompleted\ncancelled\ninactive" as TargetEventStatus #F3E8FF
+
+    rectangle "<b>TargetEvent</b>\n<i>frozen dataclass</i>\n\nid: UUID\nname: str\nevent_date: date\nevent_type: TargetEventType\nstatus: TargetEventStatus" as TargetEvent #EDE9FE
+}
+
 Recurring --> Daily : contains exactly one per weekday
 Daily --> Weekday : identifies day
+Goal --> GoalStatus : status
+TargetEvent --> TargetEventType : event type
+TargetEvent --> TargetEventStatus : status
+Goal ..> TargetEvent : optional reference by UUID
+
+note right of Goal
+<b>Invariant</b>
+
+Title must not be empty or whitespace-only.
+
+Target date and target event ID are optional.
+No event existence check is performed here.
+end note
+
+note right of TargetEvent
+<b>Invariant</b>
+
+Name must not be empty or whitespace-only.
+
+A dated event can exist without linked goals.
+end note
+
+note bottom of Goal
+Goals and target events use caller-supplied UUIDs.
+Past dates are valid; dates do not change statuses.
+GoalStatus and TargetEventStatus are separate types.
+end note
 
 note right of Daily
 <b>Invariant</b>
